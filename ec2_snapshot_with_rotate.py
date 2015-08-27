@@ -130,6 +130,9 @@ else:
   instanceid = None
   
 for region in regions:
-  log.info("Processing region {0}".format(region))
+  if instanceid != None:
+    log.info("Processing instance {1} in region {0}".format(region, instanceid))
+  else:
+    log.info("Processing region {0}".format(region))
   process_region(region, sys.argv[1], sys.argv[2], instanceid)
 
