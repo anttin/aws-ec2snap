@@ -31,7 +31,7 @@ def set_resource_tags(resource, tags):
       resource.add_tag(tag_key, tag_value)
 
 
-def process_region(region, backup_type, retention_days):
+def process_region(region, backup_type, retention_days, instanceid):
   conn = boto.ec2.connect_to_region(region)
   volumes = conn.get_all_volumes()
   current_time_str = datetime.strftime(datetime.now(), '%Y-%m-%d-%H%M')
@@ -39,6 +39,9 @@ def process_region(region, backup_type, retention_days):
   for v  in volumes:
     # if the volume is not attached, don't take snapshots
     if v.attach_data.status != 'attached':
+      continue;
+
+    if (instanceid != None) and (v.attach_data.instance_id != instanceid):
       continue;
 
     tags = get_resource_tags(conn, v.id)
@@ -98,8 +101,8 @@ def process_region(region, backup_type, retention_days):
 ##############################################################################
 
 # usage
-if (len(sys.argv) <> 3):
-    print "USAGE: EC2_SNAPSHOT_WITH_ROTATE.PY <backup_type_description> <num_of_snapshots_to_keep>"
+if ((len(sys.argv) < 3) or (len(sys.argv) > 4)):
+    print "USAGE: EC2_SNAPSHOT_WITH_ROTATE.PY <backup_type_description> <num_of_snapshots_to_keep> [instance-id]"
     quit()
 
 # set logging
@@ -118,8 +121,15 @@ az = metadata['placement']['availability-zone']
 regions.append(az[:-1])
 
 # add other regions here with append if needed
+#
 
+#instance
+if (len(sys.argv) == 4):
+  instanceid = sys.argv[3]
+else:
+  instanceid = None
+  
 for region in regions:
   log.info("Processing region {0}".format(region))
-  process_region(region, sys.argv[1], sys.argv[2])
+  process_region(region, sys.argv[1], sys.argv[2], instanceid)
 
